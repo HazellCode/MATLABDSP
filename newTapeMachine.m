@@ -1,0 +1,51 @@
+clear all; close all; 
+addpath(genpath("modules/")); % make class folders visible to this file
+%% Setup
+fs = 44100; % Define Sample Rate
+
+x = zeros(4 * fs,2);
+N = length(x);
+L = N / fs;
+x(1,:) = 1;
+% x(1,2) = 1;
+L = 4; % Length of Simulation
+% [x,fs] = audioread("OS_AD_95_piano_chords_hieroglyphics_Am.wav");
+N = L * fs; % Number of Samples in Simulation
+T = 1/fs; % Length of Single Sample
+
+y = zeros(fs * L, 2);
+
+delSamp = 10000 / 44100;
+bufferL = circularQuadBuffer((delSamp * 1000),10,fs,1);
+
+bufferL.setLFO(0,0);
+
+
+
+
+% Block Diagram as of 14th November 2025
+
+%x (mix in fb) - > pre emphasis -> soft soft -> circular buffer (fb output as well)-> Bitcrush ->
+%saturation -> lowpass -> output 
+
+
+for n = 1:N
+    inL = x(n,1);
+
+
+    bufferL.push(inL)
+  
+    outL = bufferL.processBuffer;
+
+    y(n,1) = outL;
+
+    
+
+
+end
+
+
+
+plot(y(:,1))
+hold on
+plot(y(:,2))

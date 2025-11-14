@@ -1,0 +1,24 @@
+classdef bitcrush
+   
+
+    properties
+        bits = 0;
+        sampleRate
+    end
+
+    methods
+        function obj = bitcrush(bits,sampleRate)
+            obj.bits = bits;
+            obj.sampleRate = sampleRate;
+        end
+
+        function y = process(obj,x)
+
+            y = floor(x * (2^obj.bits) / (2^obj.bits));
+        end
+        function updateBits(obj,bits)
+            obj.bits = bi
+        end
+        
+    end
+end

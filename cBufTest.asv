@@ -1,0 +1,107 @@
+clear all; close all; 
+addpath("modules/"); % make class folders visible to this file
+%% Setup
+fs = 44100; % Define Sample Rate
+
+x = zeros(5 * fs,2);
+N = length(x);
+L = N / fs;
+x(1,:) = 1;
+x(1,2) = 1;
+L = 21; % Length of Simulation
+[x,fs] = audioread("SO_SL_90_drum_loop_crimelord.wav");
+N = L * fs; % Number of Samples in Simulation
+T = 1/fs; % Length of Single Sample
+
+
+y = zeros(L*fs,2);
+
+
+bufferL = circularQuadBuffer(1000, 10,fs,1);
+bufferR = circularQuadBuffer(1000, 10,fs,1);
+bufferL.setLFO(1, 100);
+bufferR.setLFO(1, 100);
+
+
+a = 0.001;
+b = 1 - a;
+val = 0;
+
+gain = 1;
+
+inputL = 0;
+inputR = 0;
+fbL = 0;
+fbR = 0;
+fb = 0;
+
+outL = 0;
+outR = 0;
+
+crushL = bitcrush(16,44100);
+crushR = bitcrush(16,44100);
+
+dw = 0.5; % 0 = dry - 1 = wet; 
+
+
+for n = 1:N
+
+    inputL = x(n,1) + (fb * fbL);
+    inputR = x(n,2) + (fb * fbR);
+
+    % if n == (10 * fs)
+    %      bufferL.setLFO(2, 500);
+    %      bufferR.setLFO(2, 500);
+    % end
+    % 
+    % if n == (15*fs)
+    %     bufferL.smoothed(0.5);
+    %     bufferR.smoothed(0.5);
+    % end 
+    %  if n == (20 * fs)
+    %      bufferL.setLFO(10, 500);
+    %      bufferR.setLFO(10, 500);
+    %  end
+
+    bufferL.push(inputL);
+    bufferR.push(inputR);    
+
+    % y(n,1) = bufferL.processBuffer;
+    % y(n,2) = bufferR.processBuffer;
+    
+
+
+    outL = crushL.process(bufferL.processBuffer);
+    outR = crushR.process(bufferR.processBuffer);
+
+    fbL = outL;
+    fbR = outR;
+
+    y(n,1) = (dw * outL) + ((1 - dw) * inputL);
+    y(n,2) = (dw * outR) + ((1 - dw) * inputR);
+
+
+
+    % y(n,1) = x(n,1);
+    % y(n,2) = x(n,2);
+end
+
+
+stem(y);
+% 
+%figure(2);
+%plot(linspace(0,fs,length(y(:,1))),20*log10(abs(fft(y(:,1)))))
+%soundsc(y,fs);
+
+
+% figure(2);
+% plot(y(:,1),color="red");
+% hold on
+% plot(y(:,2),color="green");
+% 
+
+
+
+
+
+
