@@ -72,8 +72,9 @@ classdef circularQuadBuffer < handle
             obj.T = 1/fs; % Set T 
             obj.fs = fs; % Set Sample Rate
             obj.maxDelayLength = maxDelayTimeSeconds * (fs); % Convert Seconds to Samples
-            obj.sDelMs = delayTimeMs; % set sDelMs
+            obj.sDelMs = delayTimeMs;% set sDelMs
             obj.sDelBaseFloat = obj.sDelMs * (fs/1000); % Convert Milliseconds to Samples
+            % obj.sDelBaseFloat = delayTimeMs;
             obj.sDelBaseTarget = obj.sDelBaseFloat;
             obj.sDel = floor(obj.sDelBaseFloat); % Int Sample Delay (no fractional part)
             obj.cBuf = zeros(obj.maxDelayLength, numChannels); % Create Circular Buffer
@@ -83,11 +84,11 @@ classdef circularQuadBuffer < handle
             obj.readPrev = obj.write - obj.sDel + obj.maxDelayLength -1;
             obj.read1 = obj.write - obj.sDel + obj.maxDelayLength +1;
             obj.read2 = obj.write - obj.sDel + obj.maxDelayLength +2;
-            obj.depthsp = biQuad(0.5,0.707,fs,"LPF"); % Create Depth Smoother
+            obj.depthsp = biQuad(0.5,0.707,fs,"LPF",0); % Create Depth Smoother
             obj.depthsp.setBase(obj.depth); % Initalise Depth Smoother (stops the massive jumps when delay time changed)
-            obj.ratesp = biQuad(0.1,0.707,fs,"LPF"); % Create Rate Smoother
+            obj.ratesp = biQuad(0.1,0.707,fs,"LPF",0); % Create Rate Smoother
             obj.ratesp.setBase(obj.rate); % Initalise Rate Smoother (stops the massive jumps when delay time changed)
-            obj.sDelSp = biQuad(0.1,0.707,fs,"LPF"); % Create Delay Time Smoother
+            obj.sDelSp = biQuad(0.1,0.707,fs,"LPF",0); % Create Delay Time Smoother
             obj.sDelSp.setBase(obj.sDelBaseFloat); % Initalise Time Smoother (stops the massive jumps when delay time changed)
         end
 

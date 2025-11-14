@@ -23,18 +23,21 @@ classdef biQuad <handle
         y1 = 0;
         y2 = 0; 
 
+        A = 0;
+
         type = "";
 
     end
 
     methods
-        function obj = biQuad(fc, Q, fs, type)
+        function obj = biQuad(fc, Q, fs, type, A)
             %BIQUAD Construct an instance of this class
             %   Detailed explanation goes here
 
             
 
             obj.Q = Q;
+            obj.A = 10^(A/40);
             obj.fc = fc;
             obj.fs = fs;
             obj.w0 = 2 * pi * ( obj.fc / obj.fs);
@@ -44,6 +47,8 @@ classdef biQuad <handle
                 obj.createLPFCo;
             elseif type == "HPF"
                 obj.createHPFCo;
+            elseif type == "peak"
+                obj.createPeakCo;
             end
 
             obj.b0 = obj.b0 / obj.a0;
@@ -83,6 +88,18 @@ classdef biQuad <handle
             obj.a1 = -2 * cos(obj.w0);
             obj.a2 = 1 - obj.a;
         end
+
+        function createPeakCo(obj)
+            
+            obj.a = (sin(obj.w0) / (2 * obj.Q));
+            obj.b0 = 1 + (obj.a * obj.A);
+            obj.b1 = -2 * (cos(obj.w0));
+            obj.b2 = 1 - (obj.a * obj.A);
+            obj.a0 = 1 + (obj.a/obj.A);
+            obj.a1 = obj.b1;
+            obj.a2 = 1 - (obj.a / obj.A);
+        end
+
 
         function setBase(obj, val)
             obj.y2 = val;
