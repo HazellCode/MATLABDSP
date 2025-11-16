@@ -1,31 +1,32 @@
 clear all; close all; 
-addpath(genpath("modules/")); % make class folders visible to this file
+addpath(genpath("modules/"));
+addpath(genpath("plugins/"));% make class folders visible to this file
 %% Setup
 fs = 44100; % Define Sample Rate
 
-x = zeros(4 * fs,2);
+x = zeros(10 * fs,2);
 N = length(x);
 L = N / fs;
-x(1,:) = 1;
+x(6*fs,:) = 1;
 % x(1,2) = 1;
-L = 19; % Length of Simulation
-[x,fs] = audioread("AudioFiles/OSS_DP_100_electric_guitar_pop_muted_wide_clean_groovin_Amaj.wav");
+L = 10; % Length of Simulation
+%[x,fs] = audioread("AudioFiles/02 Black and White Town.m4a");
 N = L * fs; % Number of Samples in Simulation
 T = 1/fs; % Length of Single Sample
 
 y = zeros(fs * L, 2);
 
 
-bufferL = circularQuadBuffer(300,10,fs,1);
-bufferR = circularQuadBuffer(300,10,fs,1);
+bufferL = circularQuadBuffer(1000,10,fs,1);
+bufferR = circularQuadBuffer(1000,10,fs,1);
 
 preL = biQuad(200, 0.2,fs,"peak",2);
 preR = biQuad(200, 0.2,fs,"peak",2);
 preLout = 0;
 preRout = 0;
-
-bufferL.setLFO(0.5,200);
-bufferR.setLFO(0.5,200);
+% 
+bufferL.setLFO(0,100);
+bufferR.setLFO(0,100);
 
 bicL = bitcrush(10, fs);
 bicR = bitcrush(10, fs);
@@ -43,7 +44,7 @@ postgain = 2;
 fbL = 0;
 fbR = 0;
 
-fb_mix = 0.2;
+fb_mix = 0;
 
 
 dw = 0.5;
@@ -59,6 +60,11 @@ outLPR = biQuad(outputFilter,0.707,fs,"LPF",0);
 
 for n = 1:N
 
+    if n == 2*fs
+        bufferL.delTime(1);
+        bufferR.delTime(1);
+    end
+
     inL = x(n,1) + (fbL * fb_mix);
     inR = x(n,2) + (fbR * fb_mix);
    
@@ -70,22 +76,27 @@ for n = 1:N
     % preLout = inL;
     % preRout = inR;
 
-
-    bufferL.push(tanh(preLout * pregain));
-    bufferR.push(tanh(preRout * pregain));
-  
-    outL = bufferL.processBuffer;
-    outR = bufferR.processBuffer;
-
-    fbL = outL;
-    fbR = outR;
-    
-    outL = tanh(bicL.process(outL)*postgain);
-    outR = tanh(bicR.process(outR)*postgain);
+    bufferL.push(x(n,1));
+    bufferR.push(x(n,1));
+    % bufferL.push(tanh(preLout * pregain));
+    % bufferR.push(tanh(preRout * pregain));
+    % 
+    % outL = bufferL.processBuffer;
+    % outR = bufferR.processBuffer;
+    % 
+    % fbL = outL;
+    % fbR = outR;
+    % 
+    % outL = tanh(bicL.process(outL)*postgain);
+    % outR = tanh(bicR.process(outR)*postgain);
 
         
-    y(n,1) = (dw * outLPL.process(outL)) + (1 - dw) * inL;
-    y(n,2) = (dw * outLPR.process(outR)) + (1 - dw) * inR;
+    % y(n,1) = (dw * outLPL.process(outL)) + (1 - dw) * inL;
+    % y(n,2) = (dw * outLPR.process(outR)) + (1 - dw) * inR;
+
+
+    y(n,1) = x(n,1)+bufferL.processBuffer;
+    y(n,2) = bufferR.processBuffer;
 
     
 
@@ -93,8 +104,11 @@ for n = 1:N
 end
 
 plot(y(:,1));
-hold on
-plot(y(:,2));
+
+% 
+% plot(read);
+% hold on
+% plot(write);
 
 
 soundsc(y,fs);

@@ -28,6 +28,9 @@ classdef circularQuadBuffer < handle
         read2 = 0; % read pointer - 3
         readFrac = 0; % fractional read pointer
         frac = 0; % Fractional Component (0-1)
+        prevDel = 0;
+        delD = 0;
+        readSpeed = 0;
 
         % Single Read 
         x0 = 0; % Read Pointer
@@ -56,10 +59,15 @@ classdef circularQuadBuffer < handle
         % Low = Very slow - lots of pitch bending
         % High = Very fast - high pitch squeek then 
 
+        % Delay Compensation
+        err = 0;
+        currentDelayTime = 0;
+
 
         % Max Constraights
         maxDelayTimeMs = 0; % Length of Circular Buffer in Ms
         maxDelayLength = 0; % Length of Circular Buffer in Samples
+        readVelo = 10; % Max speed in samples the read head can move when delay time is changed
 
         % Environment Settings
         T = 0; % Length of Single Sample
@@ -80,6 +88,8 @@ classdef circularQuadBuffer < handle
             obj.cBuf = zeros(obj.maxDelayLength, numChannels); % Create Circular Buffer
             obj.write = 1; % Set Write Pointer at start of Buffer
             obj.read = obj.write - obj.sDel + obj.maxDelayLength; % Set read pointer at sDel samples back from write pointer
+            obj.rawRead = obj.read - obj.sDelBaseFloat;
+            obj.rawRead = mod(obj.rawRead - 1,obj.maxDelayLength)+1;
             obj.readFrac = obj.write - obj.sDel + obj.maxDelayLength;
             obj.readPrev = obj.write - obj.sDel + obj.maxDelayLength -1;
             obj.read1 = obj.write - obj.sDel + obj.maxDelayLength +1;
@@ -88,26 +98,31 @@ classdef circularQuadBuffer < handle
             obj.depthsp.setBase(obj.depth); % Initalise Depth Smoother (stops the massive jumps when delay time changed)
             obj.ratesp = biQuad(0.1,0.707,fs,"LPF",0); % Create Rate Smoother
             obj.ratesp.setBase(obj.rate); % Initalise Rate Smoother (stops the massive jumps when delay time changed)
-            obj.sDelSp = biQuad(0.1,0.707,fs,"LPF",0); % Create Delay Time Smoother
+            obj.sDelSp = biQuad(1,0.3,fs,"LPF",0); % Create Delay Time Smoother
             obj.sDelSp.setBase(obj.sDelBaseFloat); % Initalise Time Smoother (stops the massive jumps when delay time changed)
         end
 
-        function [y,LFO] = processBuffer(obj)
+        function [y] = processBuffer(obj)
             obj.depth = obj.depthsp.process(obj.depthraw);
             obj.rate = obj.ratesp.process(obj.rateraw);
+            % New smoothing code
+            % Issue was that the biQuad smoother was causing the read
+            % pointer to overshoot the write pointer causing either no
+            % sound at all or a breif look back into the past :(
+            % The slewClamp seems to be optional as now with the biquad set
+            % to 0.3 Q rather than 0.707 the overshoot is gone
+            % Its taken me 5 hours to find that chaning one value fixes
+            % this - at least i made brownies in that time 
             obj.sDelBaseFloat = obj.sDelSp.process(obj.sDelBaseTarget);
-
+            % obj.sDelBaseFloat = obj.slewClamp(obj.sDelBaseFloat, obj.sDelBaseTarget, 10);
             obj.LFO = obj.sDelBaseFloat + (sin(obj.phase) * obj.depth); % Calculate LFO for this sample
-             % Calculate read pointer from write pointer - LFO but bound [0 < x < maxDelayLength]
-            % Calculate Read Pointer
+            % Calculate read pointer from write pointer - LFO but bound [0 < x < maxDelayLength]
             obj.rawRead = obj.write - obj.LFO; % write pointer - modulated read pointer
 
             obj.readFrac = mod(obj.rawRead - 1,obj.maxDelayLength)+1; % bind the read pointer within the bounds of the delay line
             
             obj.read = floor(obj.readFrac); % make read pointer an in
             obj.frac = obj.readFrac - obj.read; % store the fractional part of the pointer
-
-           
             % Calculate other read pointers
             obj.readPrev = obj.read - 1;
             obj.read1 = obj.read + 1;
@@ -151,7 +166,8 @@ classdef circularQuadBuffer < handle
             
             % Output the modulated delay line
             y = ((obj.a0 * obj.frac + obj.a1) * obj.frac + obj.a2) * obj.frac + obj.a3;
-            LFO = obj.LFO;
+            % LFO = obj.read;
+            % write = obj.write;
             obj.inc; % Increment Pointers
 
         end
@@ -194,6 +210,15 @@ classdef circularQuadBuffer < handle
 
             
             
+        end
+
+        function val = slewClamp(obj,cur, tar, velo)
+            % delta = difference between current value and desired change
+            delta = tar - cur;
+            if abs(delta) > velo
+                delta = sign(delta) * velo;
+            end
+            val = cur + delta;
         end
     end
 
