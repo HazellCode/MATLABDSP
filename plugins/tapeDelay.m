@@ -26,6 +26,8 @@ classdef tapeDelay < audioPlugin
 
         fbL = 0; 
         fbR = 0;
+        outL = 0;
+        outR = 0;
 
         fb_mix = 0.2;
         dw = 0.5;
@@ -64,8 +66,8 @@ classdef tapeDelay < audioPlugin
             plugin.preL = biQuad(200, 0.2,plugin.fs,"peak",2);
             plugin.preR = biQuad(200, 0.2,plugin.fs,"peak",2);
 
-            plugin.bicL = bitcrush(10, plugin.fs);
-            plugin.bicR = bitcrush(10, plugin.fs);
+            plugin.bicL = bitcrush(3, plugin.fs);
+            plugin.bicR = bitcrush(3, plugin.fs);
 
             plugin.outLPL = biQuad(plugin.outputFilter,0.707,plugin.fs,"LPF",0);
             plugin.outLPR = biQuad(plugin.outputFilter,0.707,plugin.fs,"LPF",0);
@@ -83,11 +85,22 @@ classdef tapeDelay < audioPlugin
 
             for n = 1:N
                 % Sample Buffer
+                
+
                 plugin.bufferL.push(in(n,1))
                 plugin.bufferR.push(in(n,2))
 
-                out(n,1) = plugin.bufferL.processBuffer();
-                out(n,2) = plugin.bufferR.processBuffer();
+                plugin.outL = plugin.bufferL.processBuffer();
+                plugin.outR = plugin.bufferR.processBuffer();
+                plugin.fbL = plugin.outL;
+                plugin.fbR = plugin.outR;
+
+                plugin.outL = tanh(plugin.bicL.process(plugin.outL)*plugin.postgain);
+                plugin.outR = tanh(plugin.bicR.process(plugin.outR)*plugin.postgain);
+                
+
+                out(n,1) = plugin.outL;
+                out(n,2) = plugin.outR;
 
 
             end
@@ -105,8 +118,8 @@ classdef tapeDelay < audioPlugin
             plugin.preL = biQuad(200, 0.2,plugin.fs,"peak",2);
             plugin.preR = biQuad(200, 0.2,plugin.fs,"peak",2);
 
-            plugin.bicL = bitcrush(10, plugin.fs);
-            plugin.bicR = bitcrush(10, plugin.fs);
+            plugin.bicL = bitcrush(6, plugin.fs);
+            plugin.bicR = bitcrush(6, plugin.fs);
 
             plugin.outLPL = biQuad(plugin.outputFilter,0.707,plugin.fs,"LPF",0);
             plugin.outLPR = biQuad(plugin.outputFilter,0.707,plugin.fs,"LPF",0);

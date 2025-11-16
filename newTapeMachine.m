@@ -60,11 +60,6 @@ outLPR = biQuad(outputFilter,0.707,fs,"LPF",0);
 
 for n = 1:N
 
-    if n == 2*fs
-        bufferL.delTime(1);
-        bufferR.delTime(1);
-    end
-
     inL = x(n,1) + (fbL * fb_mix);
     inR = x(n,2) + (fbR * fb_mix);
    
@@ -73,30 +68,26 @@ for n = 1:N
     preLout = preL.process(inL);
     preRout = preR.process(inR);
 
-    % preLout = inL;
-    % preRout = inR;
 
-    bufferL.push(x(n,1));
-    bufferR.push(x(n,1));
-    % bufferL.push(tanh(preLout * pregain));
-    % bufferR.push(tanh(preRout * pregain));
-    % 
-    % outL = bufferL.processBuffer;
-    % outR = bufferR.processBuffer;
-    % 
-    % fbL = outL;
-    % fbR = outR;
-    % 
-    % outL = tanh(bicL.process(outL)*postgain);
-    % outR = tanh(bicR.process(outR)*postgain);
+    bufferL.push(tanh(preLout * pregain));
+    bufferR.push(tanh(preRout * pregain));
+
+    outL = bufferL.processBuffer;
+    outR = bufferR.processBuffer;
+
+    fbL = outL;
+    fbR = outR;
+
+    outL = tanh(bicL.process(outL)*postgain);
+    outR = tanh(bicR.process(outR)*postgain);
 
         
-    % y(n,1) = (dw * outLPL.process(outL)) + (1 - dw) * inL;
-    % y(n,2) = (dw * outLPR.process(outR)) + (1 - dw) * inR;
+    y(n,1) = (dw * outLPL.process(outL)) + (1 - dw) * inL;
+    y(n,2) = (dw * outLPR.process(outR)) + (1 - dw) * inR;
 
-
-    y(n,1) = x(n,1)+bufferL.processBuffer;
-    y(n,2) = bufferR.processBuffer;
+    % 
+    % y(n,1) = x(n,1)+bufferL.processBuffer;
+    % y(n,2) = bufferR.processBuffer;
 
     
 
