@@ -2,100 +2,61 @@ clear all
 close all
 %% Setup
 fs = 44100; % Define Sample Rate
-[x,fs] = audioread("04 Song For The Dead.m4a");
+
+
 T = 1/fs; % Length of Single Sample
 L = 10; % Length of Simulation
+x = zeros(L * fs, 1);
+x(1,1) = 1;
+[x,fs] = audioread("AudioFiles/02 Black and White Town.m4a");
 N = L * fs; % Number of Samples in Simulation
 y = zeros(L*fs,3);
 
-delayTimeMs = 230; 
-delaySampels = floor(delayTimeMs * (fs/1000));
-ddl = zeros(delaySampels, 2); %stereo delay
-ddl_read = 2;
-ddl_readdel = ddl_read - 1;
-ddl_write = 1;
+
+rt60 = 0.5;
+
+APFin1 = APF(round(0.04 * fs),0.8);
+APFin2 = APF(round(0.03 * fs),0.8);
 
 
-LFO = 0;
-phase = 0;
-rate = 1;
-frac = 0.5;
-depth = 1;
-offset = 0; 
+comb = combFilter(1693, rt60, fs);
+comb1 = combFilter(2083, rt60, fs);
+comb2 = combFilter(1609, rt60, fs);
+comb3 = combFilter(2089,rt60, fs);
+comb4 = combFilter(1709, rt60, fs);
+comb5 = combFilter(2039, rt60, fs);
+comb6 = combFilter(1523, rt60, fs);
+comb7 = combFilter(2063, rt60, fs);
+comb8 = combFilter(2287, rt60, fs);
 
-read_log = zeros(L*fs,2);
+APF1 = APF(round(0.005 * fs),0.8);
+APF2 = APF(round(0.004 * fs),0.8);
+APF3 = APF(round(0.009 * fs),0.8);
+APF4 = APF(round(0.008 * fs),0.8);
 
 for n = 1:N
-    if n == 22050
-        continue
-    end
+    % APFinout = APFin1.process(x(n,1));
+    % APF1inout = APFin2.process(APFinout);
 
-    LFO = depth * sin(phase) + offset;
-    frac = LFO - floor(LFO);
-
-    y(n,1) = ddl(ddl_read);
-    y(n,2) = ddl(ddl_readdel); 
-    y(n,3) = ((1 - frac ) * ddl(ddl_read)) + (frac * ddl(ddl_readdel));
-    ddl(ddl_write) = x(n);
- 
+    APF1inout = x(n,1);
+        
+    c0out = comb.process(APF1inout);
+    c1out = comb1.process(APF1inout);
+    c2out = comb2.process(APF1inout);
+    c3out = comb3.process(APF1inout);
+    c4out = comb4.process(APF1inout);
+    c5out = comb5.process(APF1inout);
+    c6out = comb6.process(APF1inout);
+    c7out = comb7.process(APF1inout);
+    c8out = comb8.process(APF1inout);
     
-
-    ddl_read = ddl_read + 1;
-    ddl_readdel = ddl_readdel + 1;
-    ddl_write = ddl_write + 1;
-
-    
-    if ddl_read + floor(LFO) > delaySampels
-         ddl_read = ((ddl_read + floor(LFO)) - delaySampels);
-    elseif ddl_read + floor(LFO) < 0
-         ddl_read = ((ddl_read + floor(LFO)) + delaySampels);
-    else
-        ddl_read = ddl_read + floor(LFO);
-    end
-
-
-    if ddl_readdel + floor(LFO) > delaySampels
-         ddl_readdel = ((ddl_readdel + floor(LFO)) - delaySampels);
-    elseif ddl_readdel + floor(LFO) < 0
-         ddl_readdel = ((ddl_readdel + floor(LFO)) + delaySampels);
-    else
-        ddl_readdel = ddl_readdel + floor(LFO);
-        end
-
-
-
-    % if ddl_read > delaySampels
-    %     ddl_read = 1;
-    % end
-    
-    if ddl_write > delaySampels
-        ddl_write = 1;
-    end
-
-    phase = phase + 2*pi*rate*T;
-    if phase > 2*pi
-        phase = phase - 2*pi;
-    end
-
-    LFOlog(n) = floor(LFO);
-    fraclog(n) = frac;
-    readlog(n) = ddl_read;
+    APFout = APF1.process((c0out + c1out + c2out + c3out + c4out + c5out + c6out + c7out + c8out) /8);
+    APF2out = APF2.process(APFout);
+    APF3out = APF3.process(APF2out);
+    APF4out = APF4.process(APF3out);
+    y(n,1) = (c0out + c1out + c2out + c3out + c4out + c5out + c6out + c7out + c8out) /8;
   
 end
 
-soundsc(y(:,3),fs);
-% plot(y(:,1),color="blue")
-% hold on
-% plot(y(:,3),color="red")
-% plot(y(:,2),color="yellow")
-%plot(linspace(0,fs,length(y)),20*log10(abs(fft(s1))))
-
-%plot(LFOlog);
-hold on
-plot(fraclog);
-plot(LFOlog);
-
-figure(2)
-plot(readlog);
-
-
+plot(y(:,1))
+soundsc(y(:,1),fs);

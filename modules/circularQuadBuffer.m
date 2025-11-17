@@ -88,8 +88,8 @@ classdef circularQuadBuffer < handle
             obj.cBuf = zeros(obj.maxDelayLength, numChannels); % Create Circular Buffer
             obj.write = 1; % Set Write Pointer at start of Buffer
             obj.read = obj.write - obj.sDel + obj.maxDelayLength; % Set read pointer at sDel samples back from write pointer
-            obj.rawRead = obj.read - obj.sDelBaseFloat;
-            obj.rawRead = mod(obj.rawRead - 1,obj.maxDelayLength)+1;
+            % obj.rawRead = obj.read - obj.sDelBaseFloat;
+            % obj.rawRead = mod(obj.rawRead - 1,obj.maxDelayLength)+1;
             obj.readFrac = obj.write - obj.sDel + obj.maxDelayLength;
             obj.readPrev = obj.write - obj.sDel + obj.maxDelayLength -1;
             obj.read1 = obj.write - obj.sDel + obj.maxDelayLength +1;
@@ -196,6 +196,20 @@ classdef circularQuadBuffer < handle
             obj.rateraw = rate;
             obj.depthraw = depth;
         end
+
+        function val = setLFOdepth(obj,depth)
+            if depth > obj.sDelBaseTarget
+                obj.depthraw = obj.sDelBaseTarget - 1;
+            else
+                obj.depthraw = depth;
+            end
+
+            val = obj.depthraw;
+        end
+        function setLFOrate(obj, rate)
+            obj.rateraw = rate;
+        end
+
         function smoothed(obj,sma)
             % update the smoothed amount;
             obj.depthsp.updateCutoff(sma)

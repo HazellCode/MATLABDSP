@@ -1,4 +1,4 @@
-classdef bitcrush
+classdef bitcrush < handle
    
 
     properties
