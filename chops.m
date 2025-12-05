@@ -8,7 +8,7 @@ T = 1/fs; % Length of Single Sample
 L = 10; % Length of Simulation
 x = zeros(L * fs, 1);
 x(1,1) = 1;
-[x,fs] = audioread("AudioFiles/02 Black and White Town.m4a");
+[x,fs] = audioread("AudioFiles/newsnare.wav");
 N = L * fs; % Number of Samples in Simulation
 y = zeros(L*fs,3);
 
@@ -50,11 +50,11 @@ for n = 1:N
     c7out = comb7.process(APF1inout);
     c8out = comb8.process(APF1inout);
     
-    APFout = APF1.process((c0out + c1out + c2out + c3out + c4out + c5out + c6out + c7out + c8out) /8);
+    APFout = APF1.process((c0out + c1out + c2out + c3out) /4);
     APF2out = APF2.process(APFout);
     APF3out = APF3.process(APF2out);
     APF4out = APF4.process(APF3out);
-    y(n,1) = (c0out + c1out + c2out + c3out + c4out + c5out + c6out + c7out + c8out) /8;
+    y(n,1) = APF4out;
   
 end
 

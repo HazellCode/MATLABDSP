@@ -14,7 +14,7 @@ N = L * fs; % Number of Samples in Simulation
 T = 1/fs; % Length of Single Sample
 
 
-peak = biQuad(150, 0.2, fs, "peak",5);
+peak = biQuad(150, 2, fs, "peak",-1);
 
 for n = 1:N
 

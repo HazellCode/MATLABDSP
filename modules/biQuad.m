@@ -49,6 +49,8 @@ classdef biQuad <handle
                 obj.createHPFCo;
             elseif type == "peak"
                 obj.createPeakCo;
+            elseif type == "notch"
+                obj.createNotchCo;
             end
 
             obj.b0 = obj.b0 / obj.a0;
@@ -101,6 +103,15 @@ classdef biQuad <handle
         end
 
 
+        function createNotchCo(obj)
+            obj.b0 = 1;
+            obj.b1 = -2 * (cos(obj.w0));
+            obj.b2 = 1;
+            obj.a0 = 1 + obj.a;
+            obj.a1 = obj.b1;
+            obj.a2 = 1 - obj.a;
+        end
+    
         function setBase(obj, val)
             obj.y2 = val;
             obj.y1 = val;
