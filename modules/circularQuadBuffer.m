@@ -234,6 +234,37 @@ classdef circularQuadBuffer < handle
             end
             val = cur + delta;
         end
+
+
+        function update(obj, delayTimeMs,maxDelayTimeSeconds,fs, numChannels)
+            obj.T = 1/fs; % Set T 
+            obj.fs = fs; % Set Sample Rate
+            obj.maxDelayLength = maxDelayTimeSeconds * (fs); % Convert Seconds to Samples
+            obj.sDelMs = delayTimeMs;% set sDelMs
+            obj.sDelBaseFloat = obj.sDelMs * (fs/1000); % Convert Milliseconds to Samples
+            % obj.sDelBaseFloat = delayTimeMs;
+            obj.sDelBaseTarget = obj.sDelBaseFloat;
+            obj.sDel = floor(obj.sDelBaseFloat); % Int Sample Delay (no fractional part)
+            obj.cBuf = zeros(obj.maxDelayLength, numChannels); % Create Circular Buffer
+            obj.write = 1; % Set Write Pointer at start of Buffer
+            obj.read = obj.write - obj.sDel + obj.maxDelayLength; % Set read pointer at sDel samples back from write pointer
+            % obj.rawRead = obj.read - obj.sDelBaseFloat;
+            % obj.rawRead = mod(obj.rawRead - 1,obj.maxDelayLength)+1;
+            obj.readFrac = obj.write - obj.sDel + obj.maxDelayLength;
+            obj.readPrev = obj.write - obj.sDel + obj.maxDelayLength -1;
+            obj.read1 = obj.write - obj.sDel + obj.maxDelayLength +1;
+            obj.read2 = obj.write - obj.sDel + obj.maxDelayLength +2;
+
+            obj.depthsp.update(0.5, 0.707,fs, "LPF", 0)
+            %obj.depthsp = biQuad(0.5,0.707,fs,"LPF",0); % Create Depth Smoother
+            obj.depthsp.setBase(obj.depth); % Initalise Depth Smoother (stops the massive jumps when delay time changed)
+            %obj.ratesp = biQuad(0.1,0.707,fs,"LPF",0); % Create Rate Smoother
+            obj.ratesp.update(0.1, 0.707, fs, "LPF", 0);
+            obj.ratesp.setBase(obj.rate); % Initalise Rate Smoother (stops the massive jumps when delay time changed)
+            %obj.sDelSp = biQuad(1,0.3,fs,"LPF",0); % Create Delay Time Smoother
+            obj.sDelSp.update(1,0.3,fs,"LPF", 0);
+            obj.sDelSp.setBase(obj.sDelBaseFloat); % Initalise Time Smoother (stops the massive jumps when delay time changed)
+        end
     end
 
 end

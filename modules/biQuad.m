@@ -140,5 +140,30 @@ classdef biQuad <handle
 
 
         end
+
+        function update(obj, fc, Q, fs, type, A)
+            obj.Q = Q;
+            obj.A = 10^(A/40);
+            obj.fc = fc;
+            obj.fs = fs;
+            obj.w0 = 2 * pi * ( obj.fc / obj.fs);
+            obj.a = sin(obj.w0) / (2 * obj.Q);
+            obj.type = type;
+            if type == "LPF"
+                obj.createLPFCo;
+            elseif type == "HPF"
+                obj.createHPFCo;
+            elseif type == "peak"
+                obj.createPeakCo;
+            elseif type == "notch"
+                obj.createNotchCo;
+            end
+
+            obj.b0 = obj.b0 / obj.a0;
+            obj.b1 = obj.b1 / obj.a0;
+            obj.b2 = obj.b2 / obj.a0;
+            obj.a1 = obj.a1 / obj.a0;
+            obj.a2 = obj.a2 / obj.a0;
+        end
     end
 end

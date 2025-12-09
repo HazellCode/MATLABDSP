@@ -36,10 +36,16 @@ classdef tapeDelay < audioPlugin
         outputFilter = 12000;
 
         delay_Time = 1;
+        
         lfo_depth = 1;
+        temp_depth = 1; 
         lfo_rate = 0.5;
         bit_depth = 16;
         fb = 0;
+        updateValues = true;
+
+
+
 
 
         
@@ -60,7 +66,7 @@ classdef tapeDelay < audioPlugin
                 audioPluginParameter('lfo_depth','Mapping',{'log',1,800},'DisplayName', 'Depth', 'Label','samples', 'Style', 'rotaryknob', 'Layout',[2,2],'DisplayNameLocation', 'above'), ...
                 audioPluginParameter('lfo_rate','Mapping',{'lin',0,20},'DisplayName', 'Rate', 'Label','Hz', 'Style', 'rotaryknob', 'Layout',[2,3],'DisplayNameLocation', 'above'), ...
                 audioPluginParameter('fb','Mapping',{'lin',0,1},'DisplayName', 'FB', 'Label','', 'Style', 'rotaryknob', 'Layout',[2,4],'DisplayNameLocation', 'above'), ...
-                audioPluginParameter('bit_depth','Mapping',{'lin',1,16},'DisplayName', 'Bitdepth', 'Label','bit(s)', 'Style', 'vslider', 'Layout',[2,5],'DisplayNameLocation', 'above'), ...
+                audioPluginParameter('bit_depth','Mapping',{'int',1,16},'DisplayName', 'Bitdepth', 'Label','bit(s)', 'Style', 'vslider', 'Layout',[2,5],'DisplayNameLocation', 'above'), ...
                 audioPluginParameter('dw','Mapping',{'lin',0,1},'DisplayName', 'Dry/Wet', 'Label','', 'Style', 'vslider', 'Layout',[4,1],'DisplayNameLocation', 'above'), ...
                 audioPluginParameter('pregain','Mapping',{'lin',0,5},'DisplayName', 'PreGain', 'Label','dBs', 'Style', 'vslider', 'Layout',[4,2],'DisplayNameLocation', 'above'), ...
                 audioPluginParameter('postgain','Mapping',{'lin',0,5},'DisplayName', 'PostGain', 'Label','dBs', 'Style', 'vslider', 'Layout',[4,3],'DisplayNameLocation', 'above'), ...
@@ -79,8 +85,8 @@ classdef tapeDelay < audioPlugin
             plugin.preL = biQuad(200, 0.2,plugin.fs,"peak",2);
             plugin.preR = biQuad(200, 0.2,plugin.fs,"peak",2);
 
-            plugin.bicL = bitcrush(3, plugin.fs);
-            plugin.bicR = bitcrush(3, plugin.fs);
+            plugin.bicL = bitcrush(16, plugin.fs);
+            plugin.bicR = bitcrush(16, plugin.fs);
 
             plugin.outLPL = biQuad(plugin.outputFilter,0.707,plugin.fs,"LPF",0);
             plugin.outLPR = biQuad(plugin.outputFilter,0.707,plugin.fs,"LPF",0);
@@ -97,7 +103,17 @@ classdef tapeDelay < audioPlugin
             out = zeros(N,M);
 
             for n = 1:N
+                % Check for UI changes (I know this is inefficent but
+                % currently this is how I can see to do it in MATLAB)
+                % if plugin.lfo_depth ~= plugin.temp_depth
+                %     plugin.lfo_depth = plugin.temp_depth;
+                % end
                 % Sample Buffer
+                if plugin.updateValues
+                    depth = plugin.lfo_depth;
+                    plugin.lfo_depth = plugin.bufferL.setLFOdepth(depth);
+                    plugin.bufferR.setLFOdepth(depth);
+                end
                 plugin.inL = in(n,1) + (plugin.fbL * plugin.fb);
                 plugin.inR = in(n,2) + (plugin.fbR * plugin.fb);
 
@@ -128,34 +144,54 @@ classdef tapeDelay < audioPlugin
         function reset(plugin)
             % This section contains instructions to reset the plugin
             % between uses, or when the environment sample rate changes.
+            % MATLAB has issues with redefining these variables here, its
+            % messes with code validation
+            %   These all need to be converted to update calls
+
             plugin.fs = plugin.getSampleRate;
-            plugin.bufferL = circularQuadBuffer(300,10,plugin.fs,1);
-            plugin.bufferR = circularQuadBuffer(300,10,plugin.fs,1);
+
+            % plugin.bufferL = circularQuadBuffer(plugin.delay_Time,10,plugin.fs,1);
+            % plugin.bufferR = circularQuadBuffer(plugin.delay_Time,10,plugin.fs,1);
+
+            plugin.bufferL.update(plugin.delay_Time,10,plugin.fs,1);
+            plugin.bufferR.update(plugin.delay_Time,10,plugin.fs,1);
             plugin.bufferL.setLFO(plugin.lfo_rate,plugin.lfo_depth)
             plugin.bufferR.setLFO(plugin.lfo_rate,plugin.lfo_depth)
-            plugin.preL = biQuad(200, 0.2,plugin.fs,"peak",2);
-            plugin.preR = biQuad(200, 0.2,plugin.fs,"peak",2);
 
-            plugin.bicL = bitcrush(6, plugin.fs);
-            plugin.bicR = bitcrush(6, plugin.fs);
 
-            plugin.outLPL = biQuad(plugin.outputFilter,0.707,plugin.fs,"LPF",0);
-            plugin.outLPR = biQuad(plugin.outputFilter,0.707,plugin.fs,"LPF",0);
+            plugin.preL.update(200,0.2,plugin.fs, "peak", 2)
+            plugin.preR.update(200,0.2,plugin.fs, "peak", 2)
+
+
+            % plugin.preL = biQuad(200, 0.2,plugin.fs,"peak",2);
+            % plugin.preR = biQuad(200, 0.2,plugin.fs,"peak",2);
+
+            % plugin.bicL = bitcrush(plugin.bit_depth, plugin.fs);
+            % plugin.bicR = bitcrush(plugin.bit_depth, plugin.fs);
+                
+            plugin.bicL.update(plugin.bit_depth, plugin.fs);
+            plugin.bicR.update(plugin.bit_depth, plugin.fs);
+            % plugin.outLPL = biQuad(plugin.outputFilter,0.707,plugin.fs,"LPF",0);
+            % plugin.outLPR = biQuad(plugin.outputFilter,0.707,plugin.fs,"LPF",0);
+
+            plugin.outLPL.update(plugin.outputFilter, 0.707, plugin.fs, "LPF", 0);
+            plugin.outLPR.update(plugin.outputFilter, 0.707, plugin.fs, "LPF", 0);
         end
 
         function set.delay_Time(plugin, val)
             plugin.bufferL.delTime(val)
             plugin.bufferR.delTime(val)
             plugin.delay_Time = val;
-            temp_depth = plugin.lfo_depth;
-            plugin.lfo_depth = plugin.bufferL.setLFOdepth(temp_depth);
-            plugin.bufferR.setLFOdepth(temp_depth);
+            
+            plugin.updateValues = false;
+            
 
         end
 
 
         function set.lfo_depth(plugin, val)
-            plugin.lfo_depth = plugin.bufferL.setLFOdepth(val);
+            plugin.lfo_depth = val;
+            plugin.bufferL.setLFOdepth(val);
             plugin.bufferR.setLFOdepth(val);
             
             
@@ -172,6 +208,7 @@ classdef tapeDelay < audioPlugin
 
         function set.lfo_rate(plugin, val)
             plugin.lfo_rate = val;
+           
             plugin.bufferL.setLFOrate(val)
             plugin.bufferR.setLFOrate(val)
         end

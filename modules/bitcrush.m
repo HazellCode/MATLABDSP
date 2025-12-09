@@ -28,6 +28,11 @@ classdef bitcrush < handle
         function updateBits(obj,bits)
             obj.bits = bits;
         end
+
+        function update(obj, bits, sampleRate)
+            obj.bits = bits;
+            obj.sampleRate = sampleRate;
+        end
         
     end
 end
