@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "So I can cite the repo in the proposal"
+authors:
+- family-names: "HAZELL"
+  given-names: "ARCHIE"
+title: "MATLABDSP"
+version: 1.0.0
+date-released: 2025-12-11
+url: "https://github.com/HazellCode/MATLABDSP"
